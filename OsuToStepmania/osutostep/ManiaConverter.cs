@@ -49,6 +49,8 @@ namespace osutostep
         {
             string outputDirectory = smmap.CurrentDirectory;
 
+            smmap.DifficultyValue = ommap.Contents.DifficultyRating * 4;
+
             smmap.Header.Title = ommap.Contents.TitleUnicode;
             smmap.Header.TitleTranslate = ommap.Contents.Title;
             smmap.Header.Artist = ommap.Contents.ArtistUnicode;

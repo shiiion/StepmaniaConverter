@@ -21,6 +21,21 @@ namespace osutostep
         public HitObjectType Type;
         //in milliseconds (if Type == HitObjectType.Hold)
         public double End;
+        public double IndividualStrain
+        {
+            get
+            {
+                return individualStrains[Col];
+            }
+            set
+            {
+                individualStrains[Col] = value;
+            }
+        }
+        public double OverallStrain;
+
+        public double[] heldUntil;
+        public double[] individualStrains;
 
         public HitObject(HitObjectType type, int col, double start, double end = 0)
         {
@@ -28,6 +43,10 @@ namespace osutostep
             Col = col;
             Start = start;
             End = end;
+            OverallStrain = 1;
+
+            heldUntil = new double[4] { 0, 0, 0, 0 };
+            individualStrains= new double[4] { 0, 0, 0, 0 };
         }
 
         public int CompareTo(HitObject other)
@@ -49,13 +68,11 @@ namespace osutostep
     {
         public double Start;
         public double BeatLength;
-        public bool AnchorPoint;
 
-        public TimingPoint(double start, double beatLength, bool anchorPoint)
+        public TimingPoint(double start, double beatLength)
         {
             Start = start;
             BeatLength = beatLength;
-            AnchorPoint = anchorPoint;
         }
     }
 
@@ -78,6 +95,8 @@ namespace osutostep
             public string Creator;
             public string DifficultyName;
             public string Source;
+
+            public double DifficultyRating;
 
             //Difficulty
             public double HP;
@@ -154,6 +173,9 @@ namespace osutostep
                 getLineAndRun(bgText, parseBackground);
                 getLineAndRun(metadataText, parseMetadata);
                 getLineAndRun(generalText, parseGeneral);
+
+                DifficultyCalculatorUtil.CalculateStrains(Contents.Objects);
+                Contents.DifficultyRating = DifficultyCalculatorUtil.GetDifficultyMania(Contents.Objects);
             }
             catch (Exception e)
             {
@@ -201,10 +223,16 @@ namespace osutostep
                     Contents.AudioPath = keyValuePair[1].Trim();
                     break;
                 case "AudioLeadIn":
-                    Contents.AudioLeadIn = double.Parse(keyValuePair[1]);
+                    if (!double.TryParse(keyValuePair[1], out Contents.AudioLeadIn))
+                    {
+                        throw new Exception($"Failed to parse AudioLeadIn as type double (check [General] in .osu)\n\tline={line}");
+                    }
                     break;
                 case "PreviewTime":
-                    Contents.SampleLength = double.Parse(keyValuePair[1]);
+                    if (!double.TryParse(keyValuePair[1], out Contents.SampleLength))
+                    {
+                        throw new Exception($"Failed to parse SampleLength as type double (check [General] in .osu)\n\tline={line}");
+                    }
                     break;
             }
         }
@@ -258,13 +286,22 @@ namespace osutostep
             switch (keyValuePair[0])
             {
                 case "HPDrainRate":
-                    Contents.HP = double.Parse(keyValuePair[1]);
+                    if(!double.TryParse(keyValuePair[1], out Contents.HP))
+                    {
+                        throw new Exception($"Failed to parse HPDrainRate as type double (check [Difficulty] in .osu)\n\tline={line}");
+                    }
                     break;
                 case "OverallDifficulty":
-                    Contents.OD = double.Parse(keyValuePair[1]);
+                    if (!double.TryParse(keyValuePair[1], out Contents.OD))
+                    {
+                        throw new Exception($"Failed to parse OverallDifficulty as type double (check [Difficulty] in .osu)\n\tline={line}");
+                    }
                     break;
                 case "ApproachRate":
-                    Contents.AR = double.Parse(keyValuePair[1]);
+                    if (!double.TryParse(keyValuePair[1], out Contents.AR))
+                    {
+                        throw new Exception($"Failed to parse ApproachRate as type double (check [Difficulty] in .osu)\n\tline={line}");
+                    }
                     break;
             }
         }
@@ -276,7 +313,10 @@ namespace osutostep
                 return;
             }
             string[] parameters = line.Split(',');
-            if (parameters.Length != 5 || int.Parse(parameters[0]) != 0)
+
+            int eventType;
+
+            if (parameters.Length != 5 || !int.TryParse(parameters[0], out eventType) || eventType != 0)
             {
                 return;
             }
@@ -293,14 +333,33 @@ namespace osutostep
                 return;
             }
 
-            int col = int.Parse(parameters[0]) / (512 / 4);
-            double time = double.Parse(parameters[2]);
-            HitObjectType type = (HitObjectType)Int32.Parse(parameters[3]);
+            int col;
+            if (!int.TryParse(parameters[0], out col))
+            {
+                throw new Exception($"Failed to parse HitObject X location as type int (check [HitObjects] in .osu)\n\tline={line}");
+            }
+            col /= (512 / 4);
+            double time;
+            if(!double.TryParse(parameters[2], out time))
+            {
+                throw new Exception($"Failed to parse HitObject time location as type int (check [HitObjects] in .osu)\n\tline={line}");
+            }
+            int typeInt;
+            if(!int.TryParse(parameters[3], out typeInt))
+            {
+                throw new Exception($"Failed to parse HitObject type as type int (check [HitObjects] in .osu)\n\tline={line}");
+            }
+
+            HitObjectType type = (HitObjectType)typeInt;
+
             double endTime = 0;
 
             if (type == HitObjectType.Hold)
             {
-                endTime = int.Parse(parameters[5].Split(':')[0]);
+                if(!double.TryParse(parameters[5].Split(':')[0], out endTime))
+                {
+                    throw new Exception($"Failed to parse HitObject endTime as type double (check [HitObjects] in .osu)\n\tline={line}");
+                }
             }
 
             HitObject newObject = new HitObject(type, col, time, endTime);
@@ -320,20 +379,27 @@ namespace osutostep
                 return;
             }
 
-            double start = double.Parse(parameters[0]);
-            double newLength = double.Parse(parameters[1]);
-            bool anchorPoint = (newLength > 0);
+            double start;
+            if(!double.TryParse(parameters[0], out start))
+            {
+                throw new Exception($"Failed to parse TimingPoint start as type double (check [TimingPoints] in .osu)\n\tline={line}");
+            }
+            double newLength;
+            if(!double.TryParse(parameters[1], out newLength))
+            {
+                throw new Exception($"Failed to parse TimingPoint beatLength as type double (check [TimingPoints] in .osu)\n\tline={line}");
+            }
 
-            if (!anchorPoint)
+            if (!(newLength > 0))
             {
                 return;
             }
 
-            TimingPoint newPoint = new TimingPoint(start, newLength, anchorPoint);
+            TimingPoint newPoint = new TimingPoint(start, newLength);
 
             if(Contents.TimingPoints.Count == 0 && newPoint.Start > 0)
             {
-                Contents.TimingPoints.Add(new TimingPoint(0, newLength, anchorPoint));
+                Contents.TimingPoints.Add(new TimingPoint(0, newLength));
             }
 
             Contents.TimingPoints.Add(newPoint);

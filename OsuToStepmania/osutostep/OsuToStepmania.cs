@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using Ookii.Dialogs;
 
 //codeshare: https://codeshare.io/dolY8
 
@@ -80,7 +81,7 @@ namespace osutostep
 
         public override string ToString()
         {
-            return $"\tConverted file: {Path.GetFileName(OsuFilePath)}\n\tStatus: {Success}\n\tMessage: {ConversionMessage}";
+            return $"\tConverted file: {Path.GetFileName(OsuFilePath)}\n\tStatus: {(Success ? "Success" : "Failure")}\n\tMessage: {ConversionMessage}";
         }
     }
 
@@ -112,7 +113,7 @@ namespace osutostep
         {
             iniFile = new INIFile();
 
-            FolderBrowserDialog fbd = new FolderBrowserDialog();
+            VistaFolderBrowserDialog fbd = new VistaFolderBrowserDialog();
 
             Console.WriteLine("Select osu! folder location (probably in \\AppData\\Local)");
 
@@ -172,17 +173,17 @@ namespace osutostep
             return foundOsu && foundOutput;
         }
 
-        private string getManiaConverFolders()
+        private string[] getManiaConverFolders()
         {
-            FolderBrowserDialog fbdOsu = new FolderBrowserDialog();
+            VistaFolderBrowserDialog fbdOsu = new VistaFolderBrowserDialog();
 
-            fbdOsu.SelectedPath = osuDirectory + "\\ManiaConverts";
+            fbdOsu.SelectedPath = osuDirectory + "\\ManiaConverts\\";
             if (fbdOsu.ShowDialog() != DialogResult.OK)
             {
                 return null;
             }
 
-            return fbdOsu.SelectedPath;
+            return fbdOsu.SelectedPaths;
         }
 
         private ConversionResult ConvertOsuManiaFile(string path, string folder)
@@ -193,9 +194,9 @@ namespace osutostep
                 return new ConversionResult(false, ommap.Reason, path);
             }
 
-            Directory.CreateDirectory(stepDirectory + $"\\OsuConversions\\{ommap.FormatFolderName}");
+            Directory.CreateDirectory(stepDirectory + $"\\OsuConversions\\{ommap.FormatFolderName} [{ommap.Contents.DifficultyName}]");
 
-            StepManiaMap smmap = new StepManiaMap(stepDirectory + $"\\OsuConversions\\{ommap.FormatFolderName}");
+            StepManiaMap smmap = new StepManiaMap(stepDirectory + $"\\OsuConversions\\{ommap.FormatFolderName} [{ommap.Contents.DifficultyName}]");
             bool result;
             try
             {
@@ -270,22 +271,24 @@ namespace osutostep
             }
             Console.WriteLine($"Loaded configurations\nosu directory: {osuDirectory}\nstepmania directory: {stepDirectory}\nRequesting folders to convert");
 
-            string folder = getManiaConverFolders();
+            string[] folders = getManiaConverFolders();
 
-            if (folder == null)
+            if (folders == null)
             {
                 return false;
             }
-
-            Console.WriteLine($"Converting all maps in folder: {folder}");
-            try
+            foreach (string folder in folders)
             {
-                GroupConversionResult results = ConvertGroup(folder);
-                results.PrintConversionResults();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Failed to convert maps from folder {folder}. Error message: {e.Message}");
+                Console.WriteLine($"Converting all maps in folder: {folder}");
+                try
+                {
+                    GroupConversionResult results = ConvertGroup(folder);
+                    results.PrintConversionResults();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to convert maps from folder {folder}. Error message: {e.Message}");
+                }
             }
             return true;
         }

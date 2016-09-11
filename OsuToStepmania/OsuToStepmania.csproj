@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Ookii.Dialogs">
+      <HintPath>..\References\Ookii.Dialogs.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms" />
@@ -46,7 +49,7 @@
   <ItemGroup>
     <Compile Include="osutostep\INIFile.cs" />
     <Compile Include="osutostep\ManiaConverter.cs" />
-    <Compile Include="osutostep\MathUtil.cs" />
+    <Compile Include="osutostep\Util.cs" />
     <Compile Include="osutostep\OsuManiaMap.cs" />
     <Compile Include="osutostep\OsuToStepmania.cs" />
     <Compile Include="osutostep\StepManiaMap.cs" />

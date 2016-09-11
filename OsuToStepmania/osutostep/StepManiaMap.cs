@@ -164,6 +164,9 @@ namespace osutostep
 
         private List<Measure> measures;
 
+        //scale me up by 4!!!
+        public double DifficultyValue { get; set; }
+
         public StepManiaMap(string path)
         {
             CurrentDirectory = path;
@@ -195,6 +198,27 @@ namespace osutostep
             m.AddStep(col, (beat - (measure * 4)) / 4.0, type);
         }
 
+        private string getDiffName()
+        {
+            if(DifficultyValue <= 2)
+            {
+                return "Beginner";
+            }
+            if(DifficultyValue <= 4)
+            {
+                return "Easy";
+            }
+            if (DifficultyValue <= 7)
+            {
+                return "Normal";
+            }
+            if (DifficultyValue < 10)
+            {
+                return "Hard";
+            }
+                return "Challenge";
+        }
+
         public override string ToString()
         {
             StringBuilder scBuilder = new StringBuilder();
@@ -205,8 +229,8 @@ namespace osutostep
             scBuilder.AppendLine("dance-single:");
             scBuilder.AppendLine(":");
             //!!RENAME ME LATER!!
-            scBuilder.AppendLine("Hard:");
-            scBuilder.AppendLine("8:");
+            scBuilder.AppendLine($"{getDiffName()}:");
+            scBuilder.AppendLine($"{Math.Round(DifficultyValue)}:");
             scBuilder.AppendLine("0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000:");
             for (int a = 0; a < measures.Count; a++)
             {
