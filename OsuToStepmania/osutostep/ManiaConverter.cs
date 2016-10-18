@@ -40,9 +40,35 @@ namespace osutostep
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine(e.Message);
             }
+            try
+            {
+                Banner bannerGenerated = new Banner(ommap.CurrentDirectory + $"\\{ommap.Contents.BgPath}");
+                bannerGenerated.BannerArtist = smmap.Header.Artist;
+                bannerGenerated.BannerTitle = smmap.Header.Title;
+                bannerGenerated.FontColor = System.Drawing.Color.White;
+                bannerGenerated.BannerFont = "Moon Light.otf";
+                bannerGenerated.GenerateFinalImage().Save(smmap.CurrentDirectory + $"\\{smmap.Header.Banner}");
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(e.Message);
+            }
 
             Console.ResetColor();
+
+
             return true;
+        }
+
+        public static double getOsuBeatsnapOffset(TimingPoint firstTimingPoint)
+        {
+            double curMS = firstTimingPoint.Start;
+            while(curMS > 0)
+            {
+                curMS -= firstTimingPoint.BeatLength;
+            }
+            return Math.Min(Math.Abs(curMS), curMS + firstTimingPoint.BeatLength) / 1000.0;
         }
 
         public static bool Convert(OsuManiaMap ommap, ref StepManiaMap smmap)
@@ -57,6 +83,8 @@ namespace osutostep
             smmap.Header.ArtistTranslate = ommap.Contents.Artist;
             smmap.Header.Credit = ommap.Contents.Source;
             smmap.Header.Background = ommap.Contents.BgPath;
+            smmap.Header.Banner = ommap.Contents.BgPath.Substring(0, ommap.Contents.BgPath.IndexOf('.')) + "_bn" 
+                + ommap.Contents.BgPath.Substring(ommap.Contents.BgPath.IndexOf('.'));
             smmap.Header.SongPath = ommap.Contents.AudioPath;
             smmap.Header.StartOffset = 0;
             smmap.Header.SampleStart = (double)ommap.Contents.AudioLeadIn / 1000.0;
@@ -73,10 +101,21 @@ namespace osutostep
                     smmap.Header.TimingPoints.Add(convertBPM(true, point, ommap.Contents.TimingPoints));
                 }
             }
-            double beatOffset;
+            double beatOffset = 0;
             double offset = getMillisFromBeat(beatOffset = getNoteSnapOffset(ommap.Contents.Objects[0], ommap.Contents.TimingPoints), smmap.Header.TimingPoints);
 
-            smmap.Header.StartOffset = offset;
+
+            double bullshitOffset;
+            if (ommap.Contents.TimingPoints.Count > 1)
+            {
+                bullshitOffset = getOsuBeatsnapOffset(ommap.Contents.TimingPoints[1]);
+            }
+            else
+            {
+                bullshitOffset = 0;
+            }
+
+            smmap.Header.StartOffset = offset - bullshitOffset;
 
             foreach (HitObject ho in ommap.Contents.Objects)
             {

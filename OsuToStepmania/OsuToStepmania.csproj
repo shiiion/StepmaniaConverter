@@ -38,6 +38,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -47,8 +48,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="osutostep\Banner.cs" />
     <Compile Include="osutostep\INIFile.cs" />
     <Compile Include="osutostep\ManiaConverter.cs" />
+    <Compile Include="osutostep\osubase\FastRandom.cs" />
+    <Compile Include="osutostep\osubase\HitCircleMania.cs" />
+    <Compile Include="osutostep\osubase\HitCircleManiaRow.cs" />
+    <Compile Include="osutostep\osubase\HitFactoryMania.cs" />
     <Compile Include="osutostep\Util.cs" />
     <Compile Include="osutostep\OsuManiaMap.cs" />
     <Compile Include="osutostep\OsuToStepmania.cs" />
@@ -58,6 +64,7 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

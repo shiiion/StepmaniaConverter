@@ -140,7 +140,7 @@ namespace osutostep
                 sb.AppendLine($"#ARTISTTRANSLIT:{ArtistTranslate};");
                 sb.AppendLine($"#GENRE:From-Osu;");
                 sb.AppendLine($"#CREDIT:{Credit};");
-                sb.AppendLine($"#BANNER:"/*{Banner}*/+";");
+                sb.AppendLine($"#BANNER:{Banner};");
                 sb.AppendLine($"#BACKGROUND:{Background};");
                 sb.AppendLine($"#MUSIC:{SongPath};");
                 sb.AppendLine($"#OFFSET:{StartOffset};");
