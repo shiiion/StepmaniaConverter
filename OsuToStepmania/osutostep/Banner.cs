@@ -176,7 +176,7 @@ namespace osutostep
             bannerGraphics.DrawImage(BannerSource, -x, -y);
 
             int totalHeight, totalWidth;
-            totalWidth = (int)((subLoc.X + subSize.Width) - mainLoc.X);
+            totalWidth = (int)Math.Max(mainSize.Width, subSize.Width);
             totalHeight = (int)((subLoc.Y + subSize.Height) - mainLoc.Y);
             Rectangle surrounding = new Rectangle(Math.Min((int)mainLoc.X, (int)subLoc.X), Math.Min((int)mainLoc.Y, (int)subLoc.Y), totalWidth, totalHeight);
             Blur(bannerImage, surrounding, 4);
