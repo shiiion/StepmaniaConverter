@@ -176,7 +176,7 @@ namespace osutostep
             bannerGraphics.DrawImage(BannerSource, -x, -y);
 
             int totalHeight, totalWidth;
-            totalWidth = (int)((subLoc.X + subSize.Width) - mainLoc.X);
+            totalWidth = (int)Math.Max(mainSize.Width, subSize.Width);
             totalHeight = (int)((subLoc.Y + subSize.Height) - mainLoc.Y);
             Rectangle surrounding = new Rectangle(Math.Min((int)mainLoc.X, (int)subLoc.X), Math.Min((int)mainLoc.Y, (int)subLoc.Y), totalWidth, totalHeight);
             Blur(bannerImage, surrounding, 4);
@@ -264,7 +264,7 @@ namespace osutostep
         public float GetFontSize(int w)
         {
             //10 is an arbitrary proportion to the image, this can be fine tuned until it looks right
-            float scalingFactor = 10.0f;
+            float scalingFactor = 5.0f;
             int finalPixel = (int)(((float)w / scalingFactor) + 0.5f);
             return finalPixel * (7 / 5);
         }
