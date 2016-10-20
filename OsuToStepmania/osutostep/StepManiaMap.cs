@@ -107,6 +107,23 @@ namespace osutostep
         }
     }
 
+    public class Stop
+    {
+        public double Beat;
+        public double Seconds;
+
+        public Stop(double beat, double sec)
+        {
+            Beat = beat;
+            Seconds = sec;
+        }
+
+        public override string ToString()
+        {
+            return $"{Beat}={Seconds}";
+        }
+    }
+
     public enum StepArrowType
     {
         Normal = 1, HoldBegin = 2, HoldEnd = 3
@@ -127,6 +144,7 @@ namespace osutostep
             public string SongPath;
             public double StartOffset;
             public List<BPM> TimingPoints = new List<BPM>();
+            public List<Stop> Stops = new List<Stop>();
             public double SampleStart;
             public double SampleLength;
 
@@ -150,6 +168,12 @@ namespace osutostep
                     BPMString += point.ToString() + ",";
                 }
                 sb.AppendLine(BPMString);
+                string stopsString = "#STOPS:";
+                foreach(Stop s in Stops)
+                {
+                    stopsString += s.ToString() + ",";
+                }
+                sb.AppendLine(stopsString);
                 sb.AppendLine($"#SAMPLESTART:{SampleStart};");
                 sb.AppendLine($"#SAMPLELENGTH:{SampleLength};");
                 sb.AppendLine("#SELECTABLE:YES;");
