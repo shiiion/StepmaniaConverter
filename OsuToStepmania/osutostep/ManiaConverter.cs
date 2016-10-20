@@ -60,15 +60,41 @@ namespace osutostep
 
             return true;
         }
-
+        
         public static double getOsuBeatsnapOffset(TimingPoint firstTimingPoint)
         {
             double curMS = firstTimingPoint.Start;
+
+            if(curMS < 0)
+            {
+                while (curMS < 0)
+                {
+                    curMS += firstTimingPoint.BeatLength;
+                }
+
+                return -Math.Min(curMS, Math.Abs(curMS - firstTimingPoint.BeatLength)) / 1000.0;
+            }
+
             while(curMS > 0)
             {
                 curMS -= firstTimingPoint.BeatLength;
             }
-            return Math.Min(Math.Abs(curMS), curMS + firstTimingPoint.BeatLength) / 1000.0;
+
+            return -curMS / 1000.0;
+        }
+
+        public static double getBeatsnapOffsetBetweenPoints(TimingPoint a, TimingPoint b)
+        {
+            double curMS = a.Start;
+
+            while(curMS < b.Start)
+            {
+                curMS += a.BeatLength / 4.0;
+            }
+
+            curMS -= b.Start;
+
+            return -Math.Min(curMS, Math.Abs(curMS - a.BeatLength / 4.0)) / 1000.0;
         }
 
         public static bool Convert(OsuManiaMap ommap, ref StepManiaMap smmap)
@@ -90,30 +116,41 @@ namespace osutostep
             smmap.Header.SampleStart = (double)ommap.Contents.AudioLeadIn / 1000.0;
             smmap.Header.SampleLength = (double)ommap.Contents.SampleLength / 1000.0;
 
-            foreach (TimingPoint point in ommap.Contents.TimingPoints)
+
+            double bullshitOffset = 0;
+            if (ommap.Contents.TimingPoints.Count > 1)
             {
-                if (smmap.Header.TimingPoints.Count > 0)
+                if (ommap.Contents.TimingPoints[0].Start < 0)
                 {
-                    smmap.Header.TimingPoints.Add(convertBPM(false, point, ommap.Contents.TimingPoints));
+                    bullshitOffset = getOsuBeatsnapOffset(ommap.Contents.TimingPoints[0]);
+                    bullshitOffset -= ommap.Contents.TimingPoints[0].Start / 1000.0;
                 }
                 else
                 {
-                    smmap.Header.TimingPoints.Add(convertBPM(true, point, ommap.Contents.TimingPoints));
+                    bullshitOffset = getOsuBeatsnapOffset(ommap.Contents.TimingPoints[1]);
                 }
-            }
-            double beatOffset = 0;
-            double offset = getMillisFromBeat(beatOffset = getNoteSnapOffset(ommap.Contents.Objects[0], ommap.Contents.TimingPoints), smmap.Header.TimingPoints);
-
-
-            double bullshitOffset;
-            if (ommap.Contents.TimingPoints.Count > 1)
-            {
-                bullshitOffset = getOsuBeatsnapOffset(ommap.Contents.TimingPoints[1]);
             }
             else
             {
-                bullshitOffset = 0;
+                bullshitOffset = getOsuBeatsnapOffset(ommap.Contents.TimingPoints[0]);
+                if (ommap.Contents.TimingPoints[0].Start < 0)
+                {
+                    bullshitOffset -= ommap.Contents.TimingPoints[0].Start / 1000.0;
+                }
             }
+
+            for(int a=0;a<ommap.Contents.TimingPoints.Count;a++)
+            {
+                smmap.Header.TimingPoints.Add(convertBPM(a == 0, ommap.Contents.TimingPoints[a], ommap.Contents.TimingPoints));
+                if (a - 1 >= 0)
+                {
+                    smmap.Header.Stops.Add(new Stop(smmap.Header.TimingPoints[a].Beat, getBeatsnapOffsetBetweenPoints(ommap.Contents.TimingPoints[a - 1], ommap.Contents.TimingPoints[a])));
+                }
+            }
+
+            double beatOffset = 0;
+            double offset = getMillisFromBeat(beatOffset = getNoteSnapOffset(ommap.Contents.Objects[0], ommap.Contents.TimingPoints), smmap.Header.TimingPoints);
+            //offset = 0;
 
             smmap.Header.StartOffset = offset - bullshitOffset;
 
@@ -180,13 +217,13 @@ namespace osutostep
             double beats = 0;
             TimingPoint curPoint = points[0];
             double nextTime = (points.Count >= 2 ? points[1].Start : time);
-            
-            while (a < points.Count && nextTime < time) 
+
+            while (a < points.Count && nextTime <= time)
             {
                 beats += (nextTime - curPoint.Start) / curPoint.BeatLength;
                 curPoint = points[a];
                 a++;
-                nextTime = (a < points.Count  ? points[a].Start : time);
+                nextTime = (a < points.Count ? points[a].Start : time);
             }
 
             double roundOff = Math.Round((beats + ((time - curPoint.Start) / curPoint.BeatLength)) * 32) / 32;
@@ -197,11 +234,11 @@ namespace osutostep
         {
             double BPM = 60 / (osuBPM.BeatLength / 1000);
 
-            if (first)
+            if (first || osuBPM.Start < 0)
             {
                 return new BPM(0, BPM);
             }
-
+            
             return new BPM(getBeatToPoint(osuBPM.Start - points[0].Start, points), BPM);
         }
     }
