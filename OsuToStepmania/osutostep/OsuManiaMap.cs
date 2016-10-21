@@ -68,6 +68,7 @@ namespace osutostep
     {
         public double Start;
         public double BeatLength;
+        public static double BeatDivisor;
 
         public TimingPoint(double start, double beatLength)
         {
