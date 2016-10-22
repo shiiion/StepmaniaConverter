@@ -116,6 +116,8 @@ namespace osutostep
             public List<HitObject> Objects = new List<HitObject>();
         }
 
+        public double StartingPointOffset { get; private set; }
+
         public delegate void GetLineDelegate(string line);
 
         public bool Loaded { get; set; }
@@ -168,8 +170,8 @@ namespace osutostep
 
             try
             {
-                getLineAndRun(hitObjectText, parseHitObject);
                 getLineAndRun(timingPointText, parseTimingPoint);
+                getLineAndRun(hitObjectText, parseHitObject);
                 getLineAndRun(difficultyText, parseDifficulty);
                 getLineAndRun(bgText, parseBackground);
                 getLineAndRun(metadataText, parseMetadata);
@@ -363,7 +365,7 @@ namespace osutostep
                 }
             }
 
-            HitObject newObject = new HitObject(type, col, time, endTime);
+            HitObject newObject = new HitObject(type, col, time - StartingPointOffset, endTime - StartingPointOffset);
 
             Contents.Objects.Add(newObject);
         }
@@ -396,14 +398,15 @@ namespace osutostep
                 return;
             }
 
-            TimingPoint newPoint = new TimingPoint(start, newLength);
-
-            if(Contents.TimingPoints.Count == 0 && newPoint.Start > 0)
+            if (Contents.TimingPoints.Count == 0 && start > 0)
             {
                 Contents.TimingPoints.Add(new TimingPoint(0, newLength));
+                StartingPointOffset = start;
             }
-
-            Contents.TimingPoints.Add(newPoint);
+            else
+            {
+                Contents.TimingPoints.Add(new TimingPoint(start - StartingPointOffset, newLength));
+            }
         }
 
         #endregion

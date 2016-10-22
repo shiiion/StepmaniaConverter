@@ -61,15 +61,15 @@ namespace osutostep
             return true;
         }
         
-        public static double getOsuBeatsnapOffset(TimingPoint firstTimingPoint)
+        public static double getOsuBeatsnapOffset(double startOffset, double beatLength)
         {
-            double curMS = firstTimingPoint.Start;
+            double curMS = startOffset;
 
             if(curMS < 0)
             {
                 while (curMS < 0)
                 {
-                    curMS += firstTimingPoint.BeatLength / 4;
+                    curMS += beatLength / 4;
                 }
 
                 return curMS / 1000.0;
@@ -77,7 +77,7 @@ namespace osutostep
 
             while(curMS > 0)
             {
-                curMS -= firstTimingPoint.BeatLength;
+                curMS -= beatLength;
             }
 
             return curMS / 1000.0;
@@ -120,17 +120,17 @@ namespace osutostep
             {
                 if (ommap.Contents.TimingPoints[0].Start < 0)
                 {
-                    bullshitOffset = getOsuBeatsnapOffset(ommap.Contents.TimingPoints[0]);
+                    bullshitOffset = getOsuBeatsnapOffset(ommap.StartingPointOffset, ommap.Contents.TimingPoints[0].BeatLength);
                     bullshitOffset += (ommap.Contents.TimingPoints[0].Start / 1000.0);
                 }
                 else
                 {
-                    bullshitOffset = getOsuBeatsnapOffset(ommap.Contents.TimingPoints[1]);
+                    bullshitOffset = getOsuBeatsnapOffset(ommap.StartingPointOffset, ommap.Contents.TimingPoints[1].BeatLength);
                 }
             }
             else
             {
-                bullshitOffset = getOsuBeatsnapOffset(ommap.Contents.TimingPoints[0]);
+                bullshitOffset = getOsuBeatsnapOffset(ommap.StartingPointOffset, ommap.Contents.TimingPoints[0].BeatLength);
                 if (ommap.Contents.TimingPoints[0].Start < 0)
                 {
                     bullshitOffset += ommap.Contents.TimingPoints[0].Start / 1000.0;
@@ -140,16 +140,12 @@ namespace osutostep
             for(int a=0;a<ommap.Contents.TimingPoints.Count;a++)
             {
                 smmap.Header.TimingPoints.Add(convertBPM(a == 0, ommap.Contents.TimingPoints[a], ommap.Contents.TimingPoints));
-                //if (a - 1 >= 0)
-                //{
-                //    smmap.Header.Stops.Add(new Stop(smmap.Header.TimingPoints[a].Beat, getBeatsnapOffsetBetweenPoints(ommap.Contents.TimingPoints[a - 1], ommap.Contents.TimingPoints[a])));
-                //}
             }
 
             double beatOffset = 0;
-            double offset = getMillisFromBeat(beatOffset = getNoteSnapOffset(ommap.Contents.Objects[0], ommap.Contents.TimingPoints), smmap.Header.TimingPoints);
+            double offset = 0;// getMillisFromBeat(beatOffset = getNoteSnapOffset(ommap.Contents.Objects[0], ommap.Contents.TimingPoints), smmap.Header.TimingPoints);
             
-            smmap.Header.StartOffset = offset - bullshitOffset;
+            smmap.Header.StartOffset = /*offset - */ bullshitOffset - ommap.StartingPointOffset / 1000.0;
 
             foreach (HitObject ho in ommap.Contents.Objects)
             {
@@ -236,7 +232,7 @@ namespace osutostep
                 return new BPM(0, BPM);
             }
             
-            return new BPM(getBeatToPoint(osuBPM.Start, points), BPM);
+            return new BPM(getBeatToPoint(osuBPM.Start - points[0].Start, points), BPM);
         }
     }
 }
