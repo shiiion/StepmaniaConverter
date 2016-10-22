@@ -43,8 +43,8 @@ namespace osutostep
             try
             {
                 Banner bannerGenerated = new Banner(ommap.CurrentDirectory + $"\\{ommap.Contents.BgPath}");
-                bannerGenerated.BannerArtist = smmap.Header.Artist;
-                bannerGenerated.BannerTitle = smmap.Header.Title;
+                bannerGenerated.BannerArtist = smmap.Header.ArtistTranslate;
+                bannerGenerated.BannerTitle = smmap.Header.TitleTranslate;
                 bannerGenerated.FontColor = System.Drawing.Color.White;
                 bannerGenerated.BannerFont = "Moon Light.otf";
                 bannerGenerated.GenerateFinalImage().Save(smmap.CurrentDirectory + $"\\{smmap.Header.Banner}");
