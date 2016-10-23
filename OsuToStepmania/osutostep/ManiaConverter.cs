@@ -47,7 +47,7 @@ namespace osutostep
                 bannerGenerated.BannerTitle = smmap.Header.TitleTranslate;
                 bannerGenerated.FontColor = System.Drawing.Color.White;
                 bannerGenerated.BannerFont = "Moon Light.otf";
-                bannerGenerated.GenerateFinalImage().Save(smmap.CurrentDirectory + $"\\{smmap.Header.Banner}");
+                //bannerGenerated.GenerateFinalImage().Save(smmap.CurrentDirectory + $"\\{smmap.Header.Banner}");
             }
             catch (Exception e)
             {
@@ -132,36 +132,31 @@ namespace osutostep
                 }
             }
 
-            for(int a=0;a<ommap.Contents.TimingPoints.Count;a++)
+            List<double> interBeatPauses = new List<double>();
+            for (int a = 0; a < ommap.Contents.TimingPoints.Count - 1; a++)
             {
-                smmap.Header.TimingPoints.Add(convertBPM(ommap.Contents.TimingPoints[a], ommap.Contents.TimingPoints));
+                interBeatPauses.Add(getPauseBetweenPoints(ommap.Contents.TimingPoints[a], ommap.Contents.TimingPoints[a + 1]));
+                smmap.Header.Stops.Add(new Stop(getBeatToPoint(ommap.Contents.TimingPoints[a + 1].Start, ommap.Contents.TimingPoints, interBeatPauses),
+                    interBeatPauses[a] / 1000.0));
             }
 
-            double cumulativeBeatOffset = 0;
-            double nextTPStart = ommap.Contents.TimingPoints.Count == 1 ? double.MaxValue : ommap.Contents.TimingPoints[1].Start;
-            int tpIndex = 1;
+            for (int a=0;a<ommap.Contents.TimingPoints.Count;a++)
+            {
+                smmap.Header.TimingPoints.Add(convertBPM(ommap.Contents.TimingPoints[a], ommap.Contents.TimingPoints, interBeatPauses));
+            }
 
             smmap.Header.StartOffset = bullshitOffset - ommap.StartingPointOffset / 1000.0;
 
             foreach (HitObject ho in ommap.Contents.Objects)
             {
-                //if (ho.Start > nextTPStart)
-                //{
-                //    double offset;
-                //    cumulativeBeatOffset += (offset = getNoteSnapOffset(ho, ommap.Contents.TimingPoints));
-                //    smmap.Header.Stops.Add(new Stop(getBeatToPoint(nextTPStart, ommap.Contents.TimingPoints), 
-                //        getMillisFromBeat(-offset, smmap.Header.TimingPoints[tpIndex].BeatsPerMin)));
-                //    nextTPStart = (++tpIndex == ommap.Contents.TimingPoints.Count ? double.MaxValue : ommap.Contents.TimingPoints[tpIndex].Start);
-                //}
-
                 if (ho.Type == HitObjectType.Hit)
                 {
-                    smmap.AddObject(ho.Col, getBeatToPoint(ho.Start, ommap.Contents.TimingPoints) + cumulativeBeatOffset, StepArrowType.Normal);
+                    smmap.AddObject(ho.Col, getBeatToPoint(ho.Start, ommap.Contents.TimingPoints, interBeatPauses), StepArrowType.Normal);
                 }
                 else
                 {
-                    smmap.AddObject(ho.Col, getBeatToPoint(ho.Start, ommap.Contents.TimingPoints) + cumulativeBeatOffset, StepArrowType.HoldBegin);
-                    smmap.AddObject(ho.Col, getBeatToPoint(ho.End, ommap.Contents.TimingPoints) + cumulativeBeatOffset, StepArrowType.HoldEnd);
+                    smmap.AddObject(ho.Col, getBeatToPoint(ho.Start, ommap.Contents.TimingPoints, interBeatPauses), StepArrowType.HoldBegin);
+                    smmap.AddObject(ho.Col, getBeatToPoint(ho.End, ommap.Contents.TimingPoints, interBeatPauses), StepArrowType.HoldEnd);
                 }
             }
 
@@ -192,30 +187,8 @@ namespace osutostep
         {
             return ((beat) / bpm) * 60;
         }
-
-        private static double getNoteSnapOffset(HitObject ho, List<TimingPoint> points)
-        {
-            const double SNAP_DENOM = 1;
-            double row, beatDiv;
-
-            double beatSubDiv = getBeatToPoint(ho.Start, points);
-
-            beatSubDiv = beatSubDiv - ((int)beatSubDiv);
-
-            MathUtil.GetRichardsFraction(beatSubDiv, out row, out beatDiv);
-
-            if (beatDiv <= SNAP_DENOM)
-            {
-                return 0;
-            }
-
-            double scale = (beatDiv / SNAP_DENOM);
-            double nearest = 0;
-            for (; nearest < row; nearest += scale) ;
-            return (nearest - row) / beatDiv;
-        }
-
-        private static double getBeatToPoint(double time, List<TimingPoint> points)
+        
+        private static double getBeatToPoint(double time, List<TimingPoint> points, List<double> interBeatPauses)
         {
             int a = 1;
             double beats = 0;
@@ -224,7 +197,7 @@ namespace osutostep
 
             while (a < points.Count && nextTime <= time)
             {
-                beats += (nextTime - curPoint.Start) / curPoint.BeatLength;
+                beats += (nextTime - curPoint.Start - interBeatPauses[a - 1]) / curPoint.BeatLength;
                 curPoint = points[a];
                 a++;
                 nextTime = (a < points.Count ? points[a].Start : time);
@@ -234,7 +207,22 @@ namespace osutostep
             return roundOff;
         }
 
-        private static BPM convertBPM(TimingPoint osuBPM, List<TimingPoint> points)
+        private static double getPauseBetweenPoints(TimingPoint a, TimingPoint b)
+        {
+            double curMS = a.Start;
+            while(curMS < b.Start)
+            {
+                curMS += a.BeatLength;
+            }
+            curMS = (int)curMS;
+            if(curMS - b.Start > -((curMS - a.BeatLength) - b.Start))
+            {
+                return b.Start - (curMS - a.BeatLength);
+            }
+            return curMS - b.Start;
+        }
+
+        private static BPM convertBPM(TimingPoint osuBPM, List<TimingPoint> points, List<double> interBeatPauses)
         {
             double BPM = 60 / (osuBPM.BeatLength / 1000);
 
@@ -243,7 +231,7 @@ namespace osutostep
                 return new BPM(0, BPM);
             }
 
-            return new BPM(getBeatToPoint(osuBPM.Start, points), BPM);
+            return new BPM(getBeatToPoint(osuBPM.Start, points, interBeatPauses), BPM);
         }
     }
 }
